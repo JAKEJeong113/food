@@ -2,6 +2,7 @@ package com.naengpa.app.ui.screens.recipes
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.naengpa.app.data.DeductionItem
 import com.naengpa.app.data.RecipeRecommendation
 import com.naengpa.app.network.NetworkModule
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -20,10 +21,18 @@ data class RecipeFilters(
     val fried: Boolean = false
 )
 
+enum class CookStage { IDLE, LOADING, READY, SAVING, DONE }
+
+data class CookUiState(
+    val stage: CookStage = CookStage.IDLE,
+    val items: List<DeductionItem> = emptyList()
+)
+
 data class RecipesUiState(
     val loading: Boolean = true,
     val filters: RecipeFilters = RecipeFilters(),
     val recommendations: List<RecipeRecommendation> = emptyList(),
+    val cookStates: Map<Int, CookUiState> = emptyMap(),
     val error: String? = null
 )
 
@@ -50,6 +59,42 @@ class RecipesViewModel : ViewModel() {
 
     fun selectCuisine(option: String) {
         updateFilters { it.copy(cuisine = if (option == "전체") null else option) }
+    }
+
+    fun startCooking(recipeId: Int) {
+        setCookState(recipeId, CookUiState(stage = CookStage.LOADING))
+        viewModelScope.launch {
+            try {
+                val response = NetworkModule.api.deductionPreview(recipeId)
+                setCookState(recipeId, CookUiState(stage = CookStage.READY, items = response.items))
+            } catch (e: Exception) {
+                setCookState(recipeId, CookUiState(stage = CookStage.IDLE))
+            }
+        }
+    }
+
+    fun cancelCooking(recipeId: Int) {
+        setCookState(recipeId, CookUiState(stage = CookStage.IDLE))
+    }
+
+    fun confirmCooking(recipeId: Int) {
+        val current = _uiState.value.cookStates[recipeId] ?: CookUiState()
+        setCookState(recipeId, current.copy(stage = CookStage.SAVING))
+        viewModelScope.launch {
+            try {
+                NetworkModule.api.cookRecipe(recipeId)
+                setCookState(recipeId, current.copy(stage = CookStage.DONE))
+                load()
+            } catch (e: Exception) {
+                setCookState(recipeId, current.copy(stage = CookStage.READY))
+            }
+        }
+    }
+
+    private fun setCookState(recipeId: Int, state: CookUiState) {
+        val updated = _uiState.value.cookStates.toMutableMap()
+        updated[recipeId] = state
+        _uiState.value = _uiState.value.copy(cookStates = updated)
     }
 
     private fun updateFilters(transform: (RecipeFilters) -> RecipeFilters) {

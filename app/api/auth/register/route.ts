@@ -18,6 +18,7 @@ interface RegisterBody {
   name?: string;
   householdName?: string;
   inviteCode?: string;
+  agreedToPrivacy?: boolean;
 }
 
 export async function POST(req: NextRequest) {
@@ -43,6 +44,12 @@ export async function POST(req: NextRequest) {
   if (!inviteCode && !householdName) {
     return NextResponse.json(
       { error: "새 가구 이름 또는 초대코드 중 하나가 필요해요." },
+      { status: 400 }
+    );
+  }
+  if (body.agreedToPrivacy !== true) {
+    return NextResponse.json(
+      { error: "개인정보처리방침에 동의해야 가입할 수 있어요." },
       { status: 400 }
     );
   }

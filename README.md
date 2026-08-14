@@ -15,6 +15,9 @@ MVP를 담고 있습니다.
 - `/camera` — 냉장고 사진 업로드 → AI 인식 결과 확인/수정 → 냉장고에 반영.
 - `/recipes` — 요리종류(전체/한식/중식/양식) + 상세 필터(20분 이내 / 아이와 함께 /
   추가 장보기 없음 / 매운맛 / 다이어트식 / 유아식 / 튀김) + 전체 추천 목록.
+  각 카드의 "이걸로 먹을래"를 누르면 사용할 재료의 이전→이후 수량을 미리 보여주고,
+  "반영하기"를 누르면 실제 재고에서 차감하고 조리 이력을 남긴다.
+- `/privacy` — 개인정보처리방침. 로그인 여부와 무관하게 항상 열람 가능.
 
 ## 기술 스택
 
@@ -45,10 +48,15 @@ npm run dev
 `/api/inventory`, `/api/fridge/analyze`, `/api/recipes/recommend`는 모두
 로그인이 필요하다.
 
+가입 시 `/privacy`(개인정보처리방침)에 대한 동의 체크박스가 필수이며, 서버도
+`agreedToPrivacy`가 `true`가 아니면 가입을 거부한다(`user.privacy_agreed_at`에
+동의 시각 기록). **`/privacy`의 운영자명/연락처/시행일은 플레이스홀더이므로
+실제 서비스 정보로 채워야 한다.**
+
 ## 데이터 모델
 
 - `database/schema.sql` — 테이블 정의 (`household`, `user`, `session`,
-  `ingredient_master`, `inventory`, `recipe`, `recipe_ingredient`)
+  `ingredient_master`, `inventory`, `recipe`, `recipe_ingredient`, `cooking_history`)
 - `database/ingredients.sql` — 재료 마스터 + 기본양념 + 레시피 시드 데이터 (13종)
 
 기본양념(간장, 고추장, 소금 등)은 `is_basic_seasoning = 1`로 표시되며,
@@ -64,6 +72,15 @@ npm run dev
 `lib/scoring.ts` — 재료 일치율(60%) + 소비기한 임박 보너스(25%) + 조리시간(15%)
 가중합으로 점수를 계산합니다. 사용자 선호/과거 이력 기반 개인화는 다음 단계입니다.
 
+## 재고 자동 차감
+
+`lib/cooking.ts` — 레시피의 `quantity_text`("300g", "1/2모" 등) 맨 앞의 숫자만
+파싱해(`lib/quantityParsing.ts`) 현재 재고에서 그대로 뺍니다. 정확한 단위 환산보다
+"대략 이만큼 줄었다"를 보여주는 것이 목적이라, 재료마스터 기본단위와 레시피
+표기가 완전히 일치하지 않아도(예: 대파 "단" vs 레시피의 "대") 그대로 사용합니다.
+기본양념과 재고에 없는 재료는 차감 대상에서 제외됩니다. 반영할 때마다
+`cooking_history`에 한 줄씩 기록됩니다(추후 "자주 만든 요리" 등에 활용 가능).
+
 ## Android 앱
 
 `android/` — 이 백엔드를 그대로 호출하는 Kotlin + Jetpack Compose 네이티브
@@ -71,7 +88,7 @@ npm run dev
 
 ## 다음 단계 (범위 밖)
 
-- "이걸로 먹을래" 선택 후 재고 자동 차감 + 조리 이력
 - 장보기 리스트 생성 및 공유
 - 영수증 인식, 커머스 연동
 - 비밀번호 재설정, 소셜 로그인(카카오 등)
+- `/privacy` 실제 운영자 정보 채우기, 회원 탈퇴(개인정보 삭제) 기능

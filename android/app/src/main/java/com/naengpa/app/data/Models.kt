@@ -120,10 +120,32 @@ data class RegisterRequest(
     val password: String,
     val name: String,
     val householdName: String? = null,
-    val inviteCode: String? = null
+    val inviteCode: String? = null,
+    val agreedToPrivacy: Boolean = false
 )
 
 @Serializable
 data class ErrorResponse(
     val error: String
+)
+
+@Serializable
+data class DeductionItem(
+    val ingredientId: Int,
+    val name: String,
+    val unit: String,
+    val currentQuantity: Double,
+    val afterQuantity: Double,
+    val deducted: Double
+)
+
+@Serializable
+data class DeductionPreviewResponse(
+    val items: List<DeductionItem>
+)
+
+@Serializable
+data class CookResponse(
+    val ok: Boolean,
+    val items: List<DeductionItem>
 )

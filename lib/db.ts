@@ -21,6 +21,7 @@ const COLUMN_MIGRATIONS: Record<string, [string, string][]> = {
     ["is_baby_food", "INTEGER NOT NULL DEFAULT 0"],
   ],
   inventory: [["household_id", "INTEGER REFERENCES household(id)"]],
+  user: [["privacy_agreed_at", "TEXT NOT NULL DEFAULT (datetime('now'))"]],
 };
 
 function migrateColumns(db: Database.Database) {

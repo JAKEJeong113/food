@@ -9,7 +9,7 @@ const items = [
   { href: "/recipes", label: "요리", icon: "🍳" },
 ];
 
-const HIDDEN_ON = ["/login", "/signup"];
+const HIDDEN_ON = ["/login", "/signup", "/privacy"];
 
 export default function BottomNav() {
   const pathname = usePathname();

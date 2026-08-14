@@ -1,5 +1,7 @@
 package com.naengpa.app.ui.screens.auth
 
+import android.content.Intent
+import android.net.Uri
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -10,6 +12,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.weight
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
+import androidx.compose.material3.Checkbox
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
@@ -26,10 +29,12 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.naengpa.app.BuildConfig
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -39,6 +44,7 @@ fun SignupScreen(
     viewModel: SignupViewModel = viewModel()
 ) {
     val state by viewModel.uiState.collectAsState()
+    val context = LocalContext.current
 
     if (state.success != null) {
         SignupSuccessCard(success = state.success!!, onContinue = onSignedUp)
@@ -51,6 +57,7 @@ fun SignupScreen(
     var password by remember { mutableStateOf("") }
     var householdName by remember { mutableStateOf("") }
     var inviteCode by remember { mutableStateOf("") }
+    var agreedToPrivacy by remember { mutableStateOf(false) }
 
     Column(
         modifier = Modifier
@@ -133,12 +140,28 @@ fun SignupScreen(
         val householdFieldFilled =
             if (mode == HouseholdMode.CREATE) householdName.isNotBlank() else inviteCode.isNotBlank()
 
-        Spacer(Modifier.height(16.dp))
+        Spacer(Modifier.height(12.dp))
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Checkbox(checked = agreedToPrivacy, onCheckedChange = { agreedToPrivacy = it })
+            Text("(필수) ", style = MaterialTheme.typography.bodySmall)
+            TextButton(
+                onClick = {
+                    val url = BuildConfig.API_BASE_URL.trimEnd('/') + "/privacy"
+                    context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(url)))
+                },
+                contentPadding = androidx.compose.foundation.layout.PaddingValues(0.dp)
+            ) {
+                Text("개인정보처리방침", style = MaterialTheme.typography.bodySmall)
+            }
+            Text("에 동의합니다.", style = MaterialTheme.typography.bodySmall)
+        }
+
+        Spacer(Modifier.height(4.dp))
         Button(
             onClick = {
-                viewModel.register(name, email, password, mode, householdName, inviteCode)
+                viewModel.register(name, email, password, mode, householdName, inviteCode, agreedToPrivacy)
             },
-            enabled = !state.loading &&
+            enabled = !state.loading && agreedToPrivacy &&
                 name.isNotBlank() && email.isNotBlank() && password.length >= 8 && householdFieldFilled,
             modifier = Modifier
                 .fillMaxWidth()

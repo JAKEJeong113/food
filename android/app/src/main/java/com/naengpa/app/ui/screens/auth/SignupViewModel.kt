@@ -32,7 +32,8 @@ class SignupViewModel : ViewModel() {
         password: String,
         mode: HouseholdMode,
         householdName: String,
-        inviteCode: String
+        inviteCode: String,
+        agreedToPrivacy: Boolean
     ) {
         _uiState.value = SignupUiState(loading = true)
         viewModelScope.launch {
@@ -43,7 +44,8 @@ class SignupViewModel : ViewModel() {
                         password = password,
                         name = name.trim(),
                         householdName = if (mode == HouseholdMode.CREATE) householdName.trim() else null,
-                        inviteCode = if (mode == HouseholdMode.JOIN) inviteCode.trim().uppercase() else null
+                        inviteCode = if (mode == HouseholdMode.JOIN) inviteCode.trim().uppercase() else null,
+                        agreedToPrivacy = agreedToPrivacy
                     )
                 )
                 TokenStore.token = response.token

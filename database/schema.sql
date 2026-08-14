@@ -13,6 +13,7 @@ CREATE TABLE IF NOT EXISTS user (
   email TEXT NOT NULL,
   password_hash TEXT NOT NULL,
   name TEXT NOT NULL,
+  privacy_agreed_at TEXT NOT NULL DEFAULT (datetime('now')), -- 개인정보처리방침 동의 시각
   created_at TEXT NOT NULL DEFAULT (datetime('now'))
 );
 
@@ -71,10 +72,18 @@ CREATE TABLE IF NOT EXISTS recipe_ingredient (
   required INTEGER NOT NULL DEFAULT 1 -- 0이면 선택 재료
 );
 
+CREATE TABLE IF NOT EXISTS cooking_history (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  household_id INTEGER NOT NULL REFERENCES household(id),
+  recipe_id INTEGER NOT NULL REFERENCES recipe(id),
+  cooked_at TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
 CREATE INDEX IF NOT EXISTS idx_inventory_ingredient ON inventory(ingredient_id);
 CREATE INDEX IF NOT EXISTS idx_inventory_household ON inventory(household_id);
 CREATE INDEX IF NOT EXISTS idx_recipe_ingredient_recipe ON recipe_ingredient(recipe_id);
 CREATE INDEX IF NOT EXISTS idx_recipe_ingredient_ingredient ON recipe_ingredient(ingredient_id);
+CREATE INDEX IF NOT EXISTS idx_cooking_history_household ON cooking_history(household_id);
 
 -- UNIQUE 인덱스로 별도 생성 (컬럼 인라인 UNIQUE와 달리 기존 테이블에도 나중에
 -- 추가로 걸 수 있어, 이미 만들어진 data/naengpa.db에도 재적용 가능하다).

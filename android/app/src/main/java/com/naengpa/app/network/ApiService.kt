@@ -3,6 +3,8 @@ package com.naengpa.app.network
 import com.naengpa.app.data.AnalyzeRequest
 import com.naengpa.app.data.AnalyzeResponse
 import com.naengpa.app.data.AuthResponse
+import com.naengpa.app.data.CookResponse
+import com.naengpa.app.data.DeductionPreviewResponse
 import com.naengpa.app.data.InventoryListResponse
 import com.naengpa.app.data.InventorySaveRequest
 import com.naengpa.app.data.InventorySaveResponse
@@ -13,6 +15,7 @@ import com.naengpa.app.data.RegisterRequest
 import retrofit2.http.Body
 import retrofit2.http.GET
 import retrofit2.http.POST
+import retrofit2.http.Path
 import retrofit2.http.Query
 
 interface ApiService {
@@ -49,4 +52,10 @@ interface ApiService {
         @Query("diet") diet: Int? = null,
         @Query("babyFood") babyFood: Int? = null
     ): RecommendResponse
+
+    @GET("api/recipes/{recipeId}/deduction-preview")
+    suspend fun deductionPreview(@Path("recipeId") recipeId: Int): DeductionPreviewResponse
+
+    @POST("api/recipes/{recipeId}/cook")
+    suspend fun cookRecipe(@Path("recipeId") recipeId: Int): CookResponse
 }

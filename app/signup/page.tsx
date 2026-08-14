@@ -14,6 +14,7 @@ export default function SignupPage() {
   const [password, setPassword] = useState("");
   const [householdName, setHouseholdName] = useState("");
   const [inviteCode, setInviteCode] = useState("");
+  const [agreedToPrivacy, setAgreedToPrivacy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState<{ householdName: string; inviteCode: string } | null>(
@@ -35,6 +36,7 @@ export default function SignupPage() {
           name,
           householdName: mode === "create" ? householdName : undefined,
           inviteCode: mode === "join" ? inviteCode : undefined,
+          agreedToPrivacy,
         }),
       });
       const data = await res.json();
@@ -159,11 +161,32 @@ export default function SignupPage() {
           />
         )}
 
+        <label className="mt-2 flex items-start gap-2 text-xs text-gray-600">
+          <input
+            type="checkbox"
+            checked={agreedToPrivacy}
+            onChange={(e) => setAgreedToPrivacy(e.target.checked)}
+            className="mt-0.5"
+          />
+          <span>
+            (필수){" "}
+            <Link
+              href="/privacy"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-fresh-600 underline"
+            >
+              개인정보처리방침
+            </Link>
+            에 동의합니다.
+          </span>
+        </label>
+
         {error && <p className="text-sm text-red-500">{error}</p>}
 
         <button
           type="submit"
-          disabled={loading}
+          disabled={loading || !agreedToPrivacy}
           className="mt-2 w-full rounded-2xl bg-fresh-600 text-white py-4 font-semibold disabled:opacity-50"
         >
           {loading ? "가입 중..." : "회원가입"}

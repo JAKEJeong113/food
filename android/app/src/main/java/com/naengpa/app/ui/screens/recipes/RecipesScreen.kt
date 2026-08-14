@@ -12,10 +12,12 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.AssistChip
+import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ElevatedCard
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -139,7 +141,11 @@ fun RecipesScreen(viewModel: RecipesViewModel = viewModel()) {
                             expanded = expandedId == recipe.recipeId,
                             onToggleExpand = {
                                 expandedId = if (expandedId == recipe.recipeId) null else recipe.recipeId
-                            }
+                            },
+                            cookState = state.cookStates[recipe.recipeId] ?: CookUiState(),
+                            onStartCooking = { viewModel.startCooking(recipe.recipeId) },
+                            onCancelCooking = { viewModel.cancelCooking(recipe.recipeId) },
+                            onConfirmCooking = { viewModel.confirmCooking(recipe.recipeId) }
                         )
                     }
                 }
@@ -157,7 +163,11 @@ fun RecipesScreen(viewModel: RecipesViewModel = viewModel()) {
 private fun RecipeCard(
     recipe: RecipeRecommendation,
     expanded: Boolean,
-    onToggleExpand: () -> Unit
+    onToggleExpand: () -> Unit,
+    cookState: CookUiState,
+    onStartCooking: () -> Unit,
+    onCancelCooking: () -> Unit,
+    onConfirmCooking: () -> Unit
 ) {
     ElevatedCard(modifier = Modifier.fillMaxWidth()) {
         Column(Modifier.padding(16.dp)) {
@@ -214,13 +224,93 @@ private fun RecipeCard(
                 }
             }
 
-            TextButton(onClick = onToggleExpand) {
-                Text(if (expanded) "레시피 접기 ▲" else "레시피 보기 ▼")
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                TextButton(onClick = onToggleExpand) {
+                    Text(if (expanded) "레시피 접기 ▲" else "레시피 보기 ▼")
+                }
+                if (cookState.stage == CookStage.IDLE) {
+                    TextButton(onClick = onStartCooking) {
+                        Text("이걸로 먹을래")
+                    }
+                }
             }
 
             if (expanded) {
                 Text(recipe.description, style = MaterialTheme.typography.bodyMedium)
             }
+
+            if (cookState.stage == CookStage.LOADING) {
+                Spacer(Modifier.height(8.dp))
+                Text(
+                    "재고를 확인하고 있어요...",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+
+            if (cookState.stage == CookStage.READY || cookState.stage == CookStage.SAVING) {
+                Spacer(Modifier.height(8.dp))
+                if (cookState.items.isEmpty()) {
+                    Text(
+                        "차감할 재고가 없어요. 그래도 조리 기록만 남길까요?",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                } else {
+                    Text(
+                        "사용한 재료를 냉장고에서 반영할까요?",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    Spacer(Modifier.height(4.dp))
+                    Column {
+                        cookState.items.forEach { item ->
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween
+                            ) {
+                                Text(item.name, style = MaterialTheme.typography.bodySmall)
+                                Text(
+                                    "${formatQuantity(item.currentQuantity)}${item.unit} → " +
+                                        "${formatQuantity(item.afterQuantity)}${item.unit}",
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            }
+                        }
+                    }
+                }
+
+                Spacer(Modifier.height(8.dp))
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    OutlinedButton(
+                        onClick = onCancelCooking,
+                        enabled = cookState.stage != CookStage.SAVING,
+                        modifier = Modifier.weight(1f)
+                    ) {
+                        Text("취소")
+                    }
+                    Button(
+                        onClick = onConfirmCooking,
+                        enabled = cookState.stage != CookStage.SAVING,
+                        modifier = Modifier.weight(1f)
+                    ) {
+                        Text(if (cookState.stage == CookStage.SAVING) "반영 중..." else "반영하기")
+                    }
+                }
+            }
+
+            if (cookState.stage == CookStage.DONE) {
+                Spacer(Modifier.height(8.dp))
+                Text(
+                    "🎉 반영했어요! 냉장고 재고가 업데이트됐어요.",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.primary
+                )
+            }
         }
     }
 }
+
+private fun formatQuantity(value: Double): String =
+    if (value == value.toLong().toDouble()) value.toLong().toString() else value.toString()
