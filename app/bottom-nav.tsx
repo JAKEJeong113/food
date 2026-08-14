@@ -9,8 +9,12 @@ const items = [
   { href: "/recipes", label: "요리", icon: "🍳" },
 ];
 
+const HIDDEN_ON = ["/login", "/signup"];
+
 export default function BottomNav() {
   const pathname = usePathname();
+
+  if (HIDDEN_ON.includes(pathname)) return null;
 
   return (
     <nav className="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-[480px] border-t bg-white flex justify-around py-2">

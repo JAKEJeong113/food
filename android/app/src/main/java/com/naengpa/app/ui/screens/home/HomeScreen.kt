@@ -3,6 +3,7 @@ package com.naengpa.app.ui.screens.home
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -15,6 +16,7 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ElevatedCard
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -29,6 +31,7 @@ import com.naengpa.app.data.RecipeRecommendation
 @Composable
 fun HomeScreen(
     onNavigateToCamera: () -> Unit,
+    onLoggedOut: () -> Unit,
     viewModel: HomeViewModel = viewModel()
 ) {
     val state by viewModel.uiState.collectAsState()
@@ -40,12 +43,31 @@ fun HomeScreen(
             .fillMaxSize()
             .padding(horizontal = 20.dp, vertical = 32.dp)
     ) {
-        Text("오늘 뭐 먹지?", style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold)
-        Text(
-            "냉장고를 찍으면, 오늘 먹을 게 보여요.",
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
-        )
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween
+        ) {
+            Column {
+                Text(
+                    "오늘 뭐 먹지?",
+                    style = MaterialTheme.typography.headlineMedium,
+                    fontWeight = FontWeight.Bold
+                )
+                Text(
+                    "냉장고를 찍으면, 오늘 먹을 게 보여요.",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+            Column(horizontalAlignment = Alignment.End) {
+                state.householdName?.let {
+                    Text(it, style = MaterialTheme.typography.labelSmall)
+                }
+                TextButton(onClick = { viewModel.logout(onLoggedOut) }) {
+                    Text("로그아웃", style = MaterialTheme.typography.labelSmall)
+                }
+            }
+        }
 
         Spacer(Modifier.height(24.dp))
 

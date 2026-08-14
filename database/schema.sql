@@ -1,5 +1,27 @@
 -- 냉파AI 프로토타입 스키마 (SQLite)
--- MVP 단계에서는 단일 가구(단일 사용자)를 가정하고 households/users 테이블은 생략한다.
+
+CREATE TABLE IF NOT EXISTS household (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  name TEXT NOT NULL,
+  invite_code TEXT NOT NULL, -- 가족이 회원가입 시 같은 가구에 합류할 때 사용
+  created_at TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
+CREATE TABLE IF NOT EXISTS user (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  household_id INTEGER NOT NULL REFERENCES household(id),
+  email TEXT NOT NULL,
+  password_hash TEXT NOT NULL,
+  name TEXT NOT NULL,
+  created_at TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
+CREATE TABLE IF NOT EXISTS session (
+  token TEXT PRIMARY KEY,
+  user_id INTEGER NOT NULL REFERENCES user(id),
+  created_at TEXT NOT NULL DEFAULT (datetime('now')),
+  expires_at TEXT NOT NULL
+);
 
 CREATE TABLE IF NOT EXISTS ingredient_master (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -15,6 +37,7 @@ CREATE TABLE IF NOT EXISTS ingredient_master (
 
 CREATE TABLE IF NOT EXISTS inventory (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
+  household_id INTEGER REFERENCES household(id),
   ingredient_id INTEGER NOT NULL REFERENCES ingredient_master(id),
   quantity REAL NOT NULL DEFAULT 0,
   unit TEXT NOT NULL,
@@ -49,6 +72,7 @@ CREATE TABLE IF NOT EXISTS recipe_ingredient (
 );
 
 CREATE INDEX IF NOT EXISTS idx_inventory_ingredient ON inventory(ingredient_id);
+CREATE INDEX IF NOT EXISTS idx_inventory_household ON inventory(household_id);
 CREATE INDEX IF NOT EXISTS idx_recipe_ingredient_recipe ON recipe_ingredient(recipe_id);
 CREATE INDEX IF NOT EXISTS idx_recipe_ingredient_ingredient ON recipe_ingredient(ingredient_id);
 
@@ -56,3 +80,6 @@ CREATE INDEX IF NOT EXISTS idx_recipe_ingredient_ingredient ON recipe_ingredient
 -- 추가로 걸 수 있어, 이미 만들어진 data/naengpa.db에도 재적용 가능하다).
 CREATE UNIQUE INDEX IF NOT EXISTS idx_recipe_title ON recipe(title);
 CREATE UNIQUE INDEX IF NOT EXISTS idx_recipe_ingredient_unique ON recipe_ingredient(recipe_id, ingredient_id);
+CREATE UNIQUE INDEX IF NOT EXISTS idx_household_invite_code ON household(invite_code);
+CREATE UNIQUE INDEX IF NOT EXISTS idx_user_email ON user(email);
+CREATE INDEX IF NOT EXISTS idx_session_user ON session(user_id);

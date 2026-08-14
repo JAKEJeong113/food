@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 
 interface Recommendation {
   recipeId: number;
@@ -53,6 +54,7 @@ const DEFAULT_FILTERS: Filters = {
 };
 
 export default function RecipesPage() {
+  const router = useRouter();
   const [filters, setFilters] = useState<Filters>(DEFAULT_FILTERS);
   const [recommendations, setRecommendations] = useState<Recommendation[]>([]);
   const [expanded, setExpanded] = useState<number | null>(null);
@@ -71,10 +73,18 @@ export default function RecipesPage() {
 
     setLoading(true);
     fetch(`/api/recipes/recommend?${params.toString()}`)
-      .then((res) => res.json())
-      .then((data) => setRecommendations(data.recommendations))
+      .then((res) => {
+        if (res.status === 401) {
+          router.push("/login");
+          return null;
+        }
+        return res.json();
+      })
+      .then((data) => {
+        if (data) setRecommendations(data.recommendations);
+      })
       .finally(() => setLoading(false));
-  }, [filters]);
+  }, [filters, router]);
 
   function toggleBoolean(key: keyof Filters) {
     setFilters((prev) => ({ ...prev, [key]: !prev[key] }));

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getDb } from "@/lib/db";
+import { getRequestUser } from "@/lib/auth";
 
 export const runtime = "nodejs";
 
@@ -10,7 +11,12 @@ interface InventoryItemInput {
   defaultShelfLifeDays?: number | null;
 }
 
-export async function GET() {
+export async function GET(req: NextRequest) {
+  const user = getRequestUser(req);
+  if (!user) {
+    return NextResponse.json({ error: "로그인이 필요해요." }, { status: 401 });
+  }
+
   const db = getDb();
   const rows = db
     .prepare(
@@ -18,14 +24,20 @@ export async function GET() {
               im.id AS ingredient_id, im.name_ko, im.category, im.storage_type, im.is_basic_seasoning
        FROM inventory inv
        JOIN ingredient_master im ON im.id = inv.ingredient_id
+       WHERE inv.household_id = ?
        ORDER BY inv.expiry_date IS NULL, inv.expiry_date ASC`
     )
-    .all();
+    .all(user.householdId);
 
   return NextResponse.json({ items: rows });
 }
 
 export async function POST(req: NextRequest) {
+  const user = getRequestUser(req);
+  if (!user) {
+    return NextResponse.json({ error: "로그인이 필요해요." }, { status: 401 });
+  }
+
   const body = await req.json();
   const { items } = body as { items: InventoryItemInput[] };
 
@@ -37,11 +49,11 @@ export async function POST(req: NextRequest) {
   const today = new Date();
 
   const findExisting = db.prepare(
-    "SELECT id FROM inventory WHERE ingredient_id = ?"
+    "SELECT id FROM inventory WHERE household_id = ? AND ingredient_id = ?"
   );
   const insert = db.prepare(
-    `INSERT INTO inventory (ingredient_id, quantity, unit, purchase_date, expiry_date, storage_location)
-     VALUES (?, ?, ?, ?, ?, ?)`
+    `INSERT INTO inventory (household_id, ingredient_id, quantity, unit, purchase_date, expiry_date, storage_location)
+     VALUES (?, ?, ?, ?, ?, ?, ?)`
   );
   const update = db.prepare(
     `UPDATE inventory SET quantity = ?, unit = ?, expiry_date = ?, updated_at = datetime('now')
@@ -58,11 +70,21 @@ export async function POST(req: NextRequest) {
         expiryDate = expiry.toISOString().slice(0, 10);
       }
 
-      const existing = findExisting.get(row.ingredientId) as { id: number } | undefined;
+      const existing = findExisting.get(user.householdId, row.ingredientId) as
+        | { id: number }
+        | undefined;
       if (existing) {
         update.run(row.quantity, row.unit, expiryDate, existing.id);
       } else {
-        insert.run(row.ingredientId, row.quantity, row.unit, purchaseDate, expiryDate, "냉장");
+        insert.run(
+          user.householdId,
+          row.ingredientId,
+          row.quantity,
+          row.unit,
+          purchaseDate,
+          expiryDate,
+          "냉장"
+        );
       }
     }
   });

@@ -86,3 +86,44 @@ data class RecipeRecommendation(
 data class RecommendResponse(
     val recommendations: List<RecipeRecommendation>
 )
+
+@Serializable
+data class AuthUserDto(
+    val id: Int,
+    val email: String,
+    val name: String,
+    val householdId: Int,
+    val householdName: String,
+    val inviteCode: String
+)
+
+@Serializable
+data class AuthResponse(
+    val token: String,
+    val user: AuthUserDto
+)
+
+@Serializable
+data class MeResponse(
+    val user: AuthUserDto
+)
+
+@Serializable
+data class LoginRequest(
+    val email: String,
+    val password: String
+)
+
+@Serializable
+data class RegisterRequest(
+    val email: String,
+    val password: String,
+    val name: String,
+    val householdName: String? = null,
+    val inviteCode: String? = null
+)
+
+@Serializable
+data class ErrorResponse(
+    val error: String
+)

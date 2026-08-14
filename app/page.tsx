@@ -1,32 +1,50 @@
 import Link from "next/link";
+import { cookies } from "next/headers";
+import { redirect } from "next/navigation";
 import { getDb } from "@/lib/db";
 import { recommendRecipes } from "@/lib/scoring";
+import { getUserByToken, SESSION_COOKIE_NAME } from "@/lib/auth";
+import LogoutButton from "./logout-button";
 
 export const dynamic = "force-dynamic";
 
-function InventoryCount() {
+function InventoryCount(householdId: number) {
   const db = getDb();
   const row = db
     .prepare(
       `SELECT COUNT(*) AS count FROM inventory inv
        JOIN ingredient_master im ON im.id = inv.ingredient_id
-       WHERE im.is_basic_seasoning = 0`
+       WHERE im.is_basic_seasoning = 0 AND inv.household_id = ?`
     )
-    .get() as { count: number };
+    .get(householdId) as { count: number };
   return row.count;
 }
 
 export default function HomePage() {
-  const itemCount = InventoryCount();
-  const allRecommendations = itemCount > 0 ? recommendRecipes() : [];
+  const token = cookies().get(SESSION_COOKIE_NAME)?.value ?? null;
+  const user = getUserByToken(token);
+  if (!user) {
+    redirect("/login");
+  }
+
+  const itemCount = InventoryCount(user.householdId);
+  const allRecommendations = itemCount > 0 ? recommendRecipes(user.householdId) : [];
   const recommendations = allRecommendations.slice(0, 3);
 
   return (
     <div className="px-5 pt-10">
-      <h1 className="text-2xl font-bold text-gray-900">오늘 뭐 먹지?</h1>
-      <p className="text-sm text-gray-500 mt-1">
-        냉장고를 찍으면, 오늘 먹을 게 보여요.
-      </p>
+      <div className="flex items-start justify-between">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900">오늘 뭐 먹지?</h1>
+          <p className="text-sm text-gray-500 mt-1">
+            냉장고를 찍으면, 오늘 먹을 게 보여요.
+          </p>
+        </div>
+        <div className="text-right pt-1">
+          <p className="text-xs text-gray-400">{user.householdName}</p>
+          <LogoutButton />
+        </div>
+      </div>
 
       <Link
         href="/camera"

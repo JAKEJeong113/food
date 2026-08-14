@@ -11,22 +11,27 @@ declare global {
 }
 
 // CREATE TABLE IF NOT EXISTS는 이미 존재하는 테이블에 새 컬럼을 추가해주지 않는다.
-// schema.sql에 recipe 컬럼을 추가할 때마다 여기에도 추가해서, 이전에 생성된
+// 테이블에 컬럼을 추가할 때마다 여기 목록에도 추가해서, 이전에 생성된
 // data/naengpa.db를 지우지 않고도 최신 스키마를 따라잡게 한다.
-const RECIPE_COLUMN_MIGRATIONS: [string, string][] = [
-  ["cuisine_type", "TEXT NOT NULL DEFAULT '한식'"],
-  ["cooking_method", "TEXT NOT NULL DEFAULT '볶음'"],
-  ["is_diet", "INTEGER NOT NULL DEFAULT 0"],
-  ["is_baby_food", "INTEGER NOT NULL DEFAULT 0"],
-];
+const COLUMN_MIGRATIONS: Record<string, [string, string][]> = {
+  recipe: [
+    ["cuisine_type", "TEXT NOT NULL DEFAULT '한식'"],
+    ["cooking_method", "TEXT NOT NULL DEFAULT '볶음'"],
+    ["is_diet", "INTEGER NOT NULL DEFAULT 0"],
+    ["is_baby_food", "INTEGER NOT NULL DEFAULT 0"],
+  ],
+  inventory: [["household_id", "INTEGER REFERENCES household(id)"]],
+};
 
-function migrateRecipeColumns(db: Database.Database) {
-  const columns = db.prepare("PRAGMA table_info(recipe)").all() as { name: string }[];
-  const existing = new Set(columns.map((c) => c.name));
+function migrateColumns(db: Database.Database) {
+  for (const [table, migrations] of Object.entries(COLUMN_MIGRATIONS)) {
+    const columns = db.prepare(`PRAGMA table_info(${table})`).all() as { name: string }[];
+    const existing = new Set(columns.map((c) => c.name));
 
-  for (const [name, definition] of RECIPE_COLUMN_MIGRATIONS) {
-    if (!existing.has(name)) {
-      db.exec(`ALTER TABLE recipe ADD COLUMN ${name} ${definition}`);
+    for (const [name, definition] of migrations) {
+      if (!existing.has(name)) {
+        db.exec(`ALTER TABLE ${table} ADD COLUMN ${name} ${definition}`);
+      }
     }
   }
 }
@@ -41,7 +46,7 @@ function initialize(db: Database.Database) {
   );
   db.exec(schema);
 
-  migrateRecipeColumns(db);
+  migrateColumns(db);
 
   // ingredient_master/recipe는 UNIQUE 인덱스 기반 INSERT OR IGNORE라 매번 실행해도
   // 안전하다. 이렇게 해야 이미 한 번 시드된 기존 DB에도 새로 추가된 재료/레시피가

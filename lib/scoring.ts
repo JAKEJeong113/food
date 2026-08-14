@@ -72,12 +72,15 @@ function timeScore(minutes: number): number {
   return 20;
 }
 
-export function recommendRecipes(filters: RecommendFilters = {}): RecipeRecommendation[] {
+export function recommendRecipes(
+  householdId: number,
+  filters: RecommendFilters = {}
+): RecipeRecommendation[] {
   const db = getDb();
 
   const inventory = db
-    .prepare("SELECT ingredient_id, quantity, expiry_date FROM inventory")
-    .all() as InventoryRow[];
+    .prepare("SELECT ingredient_id, quantity, expiry_date FROM inventory WHERE household_id = ?")
+    .all(householdId) as InventoryRow[];
   const inventoryByIngredient = new Map(inventory.map((row) => [row.ingredient_id, row]));
 
   const recipes = db.prepare("SELECT * FROM recipe").all() as RecipeRow[];

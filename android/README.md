@@ -33,22 +33,39 @@ API 시그니처 오류가 나올 수 있습니다. 열어보시고 에러가 �
 ```
 app/src/main/java/com/naengpa/app/
 ├─ MainActivity.kt
-├─ data/Models.kt              # 백엔드 JSON과 1:1 매칭되는 데이터 클래스
-├─ network/ApiService.kt       # Retrofit 인터페이스 (analyze / inventory / recommend)
-├─ network/NetworkModule.kt    # OkHttp + kotlinx.serialization 설정
+├─ NaengpaApplication.kt       # TokenStore 초기화
+├─ data/
+│  ├─ Models.kt                # 백엔드 JSON과 1:1 매칭되는 데이터 클래스
+│  ├─ TokenStore.kt            # 세션 토큰 로컬 저장 (SharedPreferences)
+│  └─ SessionManager.kt        # 401 응답 시 전역 로그아웃 이벤트
+├─ network/
+│  ├─ ApiService.kt            # Retrofit 인터페이스 (auth / analyze / inventory / recommend)
+│  ├─ NetworkModule.kt         # OkHttp(Authorization 헤더 자동 첨부) + kotlinx.serialization
+│  └─ ErrorParsing.kt          # 실패 응답의 {"error": "..."} 파싱
 └─ ui/
-   ├─ NaengpaApp.kt            # 하단 네비게이션 + NavHost (Home/Camera/Recipes)
+   ├─ NaengpaApp.kt            # NavHost. 토큰 유무로 시작 화면(Login/Home) 결정
    ├─ theme/                   # 웹 버전과 동일한 fresh green 팔레트
    └─ screens/
-      ├─ home/                 # 오늘의 추천 Top 3
+      ├─ auth/                 # 로그인 / 회원가입(새 가구 생성 or 초대코드 합류)
+      ├─ home/                 # 오늘의 추천 Top 3, 가구명 표시, 로그아웃
       ├─ camera/                # 촬영 → 인식 결과 확인/수정 → 반영
       └─ recipes/               # 필터 + 전체 추천 리스트
 ```
 
-웹 프로토타입(`app/`, 저장소 루트)의 3화면(홈/촬영/요리)과 1:1 대응하도록
-설계했습니다. 로직(재료 정규화, 추천 스코어링)은 여전히 백엔드에만 있고,
-앱은 카메라로 찍은 사진을 JPEG로 리사이즈(최대 1280px)한 뒤 base64로 인코딩해
-그대로 `/api/fridge/analyze`에 넘깁니다.
+웹 프로토타입(`app/`, 저장소 루트)의 화면과 1:1 대응하도록 설계했습니다.
+로직(재료 정규화, 추천 스코어링, 인증)은 여전히 백엔드에만 있고, 앱은 그
+API를 그대로 호출하는 클라이언트입니다. 카메라로 찍은 사진은 JPEG로
+리사이즈(최대 1280px)한 뒤 base64로 인코딩해 `/api/fridge/analyze`에 넘깁니다.
+
+세션 토큰은 로그인/회원가입 응답으로 받아 `TokenStore`(SharedPreferences)에
+저장하고, 이후 모든 API 요청에 `Authorization: Bearer <token>` 헤더로
+자동 첨부됩니다(`NetworkModule`의 OkHttp 인터셉터). 서버가 401을 응답하면
+같은 인터셉터가 감지해 토큰을 지우고 로그인 화면으로 돌려보냅니다.
+
+> **TODO**: `TokenStore`는 지금 평문 SharedPreferences를 씁니다. 새 네이티브
+> 의존성(androidx.security:security-crypto) 추가 없이 이 검증 단계를 빠르게
+> 넘기기 위한 임시 선택이며, 실제 배포 전에는 EncryptedSharedPreferences로
+> 바꿔야 합니다.
 
 ## 다음 단계 (커머스 연동까지 가는 길)
 
@@ -58,9 +75,9 @@ app/src/main/java/com/naengpa/app/
 1. **백엔드를 실제로 배포** — 지금은 로컬 SQLite + `npm run dev`뿐이라 앱이
    개발자 PC에서만 동작합니다. Render 등에 배포하고 PostgreSQL로 옮기는 작업이
    먼저입니다 (웹 프로토타입 README의 로드맵과 동일).
-2. **로그인/가구(household) 개념 도입** — 지금은 전역 단일 재고입니다. 실제
-   앱이라면 사용자별 재고가 분리돼야 커머스 연동(주문 이력, 배송지)이 의미가
-   있습니다. 카카오 로그인이 국내 서비스에 적합합니다.
+2. ~~로그인/가구(household) 개념 도입~~ — 완료. 이메일+비밀번호 가입, 가구
+   단위 재고 공유(초대코드), 세션 토큰 인증까지 구현됨. 카카오 로그인 등
+   소셜 로그인은 아직 없음.
 3. **"이걸로 먹을래" → 재고 자동 차감 + 조리 이력** — 지금 웹/앱 모두 범위
    밖으로 뺐던 기능. 커머스 연동의 트리거(부족한 재료 파악)가 여기서 나옵니다.
 4. **장보기 리스트 → 커머스 연동** — 쿠팡/컬리 등은 공식 오픈 커머스 API가
@@ -68,5 +85,4 @@ app/src/main/java/com/naengpa/app/
    추후 제휴/Affiliate API가 확보되면 장바구니 자동 등록으로 확장하는 것이
    현실적입니다.
 
-이번 커밋은 이 로드맵의 앞단인 "네이티브 앱으로 핵심 루프(촬영→인식→추천)
-재현" 단계입니다.
+이번 커밋은 이 로드맵에서 로그인/가구 공유까지 마친 단계입니다.

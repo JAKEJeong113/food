@@ -50,6 +50,10 @@ export default function CameraPage() {
         body: JSON.stringify({ image: base64, mediaType }),
       });
 
+      if (res.status === 401) {
+        router.push("/login");
+        return;
+      }
       if (!res.ok) throw new Error("재료 인식에 실패했어요.");
 
       const data = await res.json();
