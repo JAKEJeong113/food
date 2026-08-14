@@ -40,6 +40,11 @@ npm run dev
 `lib/scoring.ts` — 재료 일치율(60%) + 소비기한 임박 보너스(25%) + 조리시간(15%)
 가중합으로 점수를 계산합니다. 사용자 선호/과거 이력 기반 개인화는 다음 단계입니다.
 
+## Android 앱
+
+`android/` — 이 백엔드를 그대로 호출하는 Kotlin + Jetpack Compose 네이티브
+클라이언트. 화면 구성과 기술 스택은 `android/README.md` 참고.
+
 ## 다음 단계 (범위 밖)
 
 - 회원가입/가구(household) 공유

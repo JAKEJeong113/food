@@ -1,0 +1,6 @@
+<resources>
+    <!-- Compose가 실제 UI를 그리므로 이 테마는 런처 아이콘/시스템 바 스타일 등
+         Activity 창 기본값에만 쓰인다. 별도 Material Components 의존성 없이
+         프레임워크 기본 테마를 부모로 사용한다. -->
+    <style name="Theme.Naengpa" parent="android:Theme.Material.Light.NoActionBar" />
+</resources>

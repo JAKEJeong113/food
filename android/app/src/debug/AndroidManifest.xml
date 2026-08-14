@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- 디버그 빌드에서만 평문 HTTP를 허용한다 (에뮬레이터의 10.0.2.2 개발 서버용).
+         release 빌드는 이 오버라이드가 적용되지 않아 HTTPS 백엔드만 허용된다. -->
+    <application android:usesCleartextTraffic="true" />
+</manifest>
