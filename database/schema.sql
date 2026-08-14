@@ -27,13 +27,17 @@ CREATE TABLE IF NOT EXISTS inventory (
 
 CREATE TABLE IF NOT EXISTS recipe (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
-  title TEXT NOT NULL,
+  title TEXT NOT NULL UNIQUE,
   description TEXT,
   servings INTEGER NOT NULL DEFAULT 2,
   cook_time_minutes INTEGER NOT NULL,
   difficulty TEXT NOT NULL DEFAULT '쉬움',
   kid_friendly INTEGER NOT NULL DEFAULT 0,
-  spicy_level INTEGER NOT NULL DEFAULT 0 -- 0~3
+  spicy_level INTEGER NOT NULL DEFAULT 0, -- 0~3, 매운맛 필터에 사용
+  cuisine_type TEXT NOT NULL DEFAULT '한식', -- 한식 | 중식 | 양식 | 일식
+  cooking_method TEXT NOT NULL DEFAULT '볶음', -- 볶음 | 찜 | 구이 | 튀김 | 조림 | 국물 | 부침 | 무침
+  is_diet INTEGER NOT NULL DEFAULT 0, -- 1이면 다이어트식(저칼로리/고단백 위주)
+  is_baby_food INTEGER NOT NULL DEFAULT 0 -- 1이면 유아식(자극적이지 않고 부드러움)
 );
 
 CREATE TABLE IF NOT EXISTS recipe_ingredient (

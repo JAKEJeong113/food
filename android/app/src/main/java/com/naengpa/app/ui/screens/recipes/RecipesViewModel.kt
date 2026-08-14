@@ -12,7 +12,12 @@ import kotlinx.coroutines.launch
 data class RecipeFilters(
     val maxTime: Int? = null,
     val kidFriendly: Boolean = false,
-    val noShopping: Boolean = false
+    val noShopping: Boolean = false,
+    val cuisine: String? = null, // null = 전체
+    val spicy: Boolean = false,
+    val diet: Boolean = false,
+    val babyFood: Boolean = false,
+    val fried: Boolean = false
 )
 
 data class RecipesUiState(
@@ -21,6 +26,8 @@ data class RecipesUiState(
     val recommendations: List<RecipeRecommendation> = emptyList(),
     val error: String? = null
 )
+
+val CUISINE_OPTIONS = listOf("전체", "한식", "중식", "양식")
 
 class RecipesViewModel : ViewModel() {
     private val _uiState = MutableStateFlow(RecipesUiState())
@@ -31,22 +38,22 @@ class RecipesViewModel : ViewModel() {
     }
 
     fun toggleMaxTime(value: Int) {
-        val current = _uiState.value.filters
-        _uiState.value = _uiState.value.copy(
-            filters = current.copy(maxTime = if (current.maxTime == value) null else value)
-        )
-        load()
+        updateFilters { it.copy(maxTime = if (it.maxTime == value) null else value) }
     }
 
-    fun toggleKidFriendly() {
-        val current = _uiState.value.filters
-        _uiState.value = _uiState.value.copy(filters = current.copy(kidFriendly = !current.kidFriendly))
-        load()
+    fun toggleKidFriendly() = updateFilters { it.copy(kidFriendly = !it.kidFriendly) }
+    fun toggleNoShopping() = updateFilters { it.copy(noShopping = !it.noShopping) }
+    fun toggleSpicy() = updateFilters { it.copy(spicy = !it.spicy) }
+    fun toggleDiet() = updateFilters { it.copy(diet = !it.diet) }
+    fun toggleBabyFood() = updateFilters { it.copy(babyFood = !it.babyFood) }
+    fun toggleFried() = updateFilters { it.copy(fried = !it.fried) }
+
+    fun selectCuisine(option: String) {
+        updateFilters { it.copy(cuisine = if (option == "전체") null else option) }
     }
 
-    fun toggleNoShopping() {
-        val current = _uiState.value.filters
-        _uiState.value = _uiState.value.copy(filters = current.copy(noShopping = !current.noShopping))
+    private fun updateFilters(transform: (RecipeFilters) -> RecipeFilters) {
+        _uiState.value = _uiState.value.copy(filters = transform(_uiState.value.filters))
         load()
     }
 
@@ -58,7 +65,12 @@ class RecipesViewModel : ViewModel() {
                 val response = NetworkModule.api.recommend(
                     maxTime = filters.maxTime,
                     kidFriendly = if (filters.kidFriendly) 1 else null,
-                    noShopping = if (filters.noShopping) 1 else null
+                    noShopping = if (filters.noShopping) 1 else null,
+                    cuisine = filters.cuisine,
+                    cookingMethod = if (filters.fried) "튀김" else null,
+                    spicy = if (filters.spicy) 1 else null,
+                    diet = if (filters.diet) 1 else null,
+                    babyFood = if (filters.babyFood) 1 else null
                 )
                 _uiState.value = _uiState.value.copy(
                     loading = false,

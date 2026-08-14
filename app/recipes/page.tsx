@@ -10,6 +10,10 @@ interface Recommendation {
   cookTimeMinutes: number;
   kidFriendly: boolean;
   spicyLevel: number;
+  cuisineType: string;
+  cookingMethod: string;
+  isDiet: boolean;
+  isBabyFood: boolean;
   score: number;
   matchRate: number;
   missing: string[];
@@ -20,19 +24,36 @@ interface Filters {
   maxTime?: number;
   kidFriendly: boolean;
   noShopping: boolean;
+  cuisine?: string; // undefined = 전체
+  spicy: boolean;
+  diet: boolean;
+  babyFood: boolean;
+  fried: boolean;
 }
 
-const FILTER_CHIPS: { key: keyof Filters; label: string; value: unknown }[] = [
-  { key: "maxTime", label: "20분 이내", value: 20 },
-  { key: "kidFriendly", label: "아이와 함께", value: true },
-  { key: "noShopping", label: "추가 장보기 없음", value: true },
+const CUISINE_OPTIONS = ["전체", "한식", "중식", "양식"];
+
+const BOOLEAN_CHIPS: { key: keyof Filters; label: string }[] = [
+  { key: "kidFriendly", label: "아이와 함께" },
+  { key: "noShopping", label: "추가 장보기 없음" },
+  { key: "spicy", label: "매운맛" },
+  { key: "diet", label: "다이어트식" },
+  { key: "babyFood", label: "유아식" },
+  { key: "fried", label: "튀김" },
 ];
 
+const DEFAULT_FILTERS: Filters = {
+  kidFriendly: false,
+  noShopping: false,
+  cuisine: undefined,
+  spicy: false,
+  diet: false,
+  babyFood: false,
+  fried: false,
+};
+
 export default function RecipesPage() {
-  const [filters, setFilters] = useState<Filters>({
-    kidFriendly: false,
-    noShopping: false,
-  });
+  const [filters, setFilters] = useState<Filters>(DEFAULT_FILTERS);
   const [recommendations, setRecommendations] = useState<Recommendation[]>([]);
   const [expanded, setExpanded] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
@@ -42,6 +63,11 @@ export default function RecipesPage() {
     if (filters.maxTime) params.set("maxTime", String(filters.maxTime));
     if (filters.kidFriendly) params.set("kidFriendly", "1");
     if (filters.noShopping) params.set("noShopping", "1");
+    if (filters.cuisine) params.set("cuisine", filters.cuisine);
+    if (filters.spicy) params.set("spicy", "1");
+    if (filters.diet) params.set("diet", "1");
+    if (filters.babyFood) params.set("babyFood", "1");
+    if (filters.fried) params.set("cookingMethod", "튀김");
 
     setLoading(true);
     fetch(`/api/recipes/recommend?${params.toString()}`)
@@ -50,11 +76,12 @@ export default function RecipesPage() {
       .finally(() => setLoading(false));
   }, [filters]);
 
-  function toggleChip(key: keyof Filters, value: unknown) {
-    setFilters((prev) => ({
-      ...prev,
-      [key]: prev[key] === value ? (key === "maxTime" ? undefined : false) : value,
-    }));
+  function toggleBoolean(key: keyof Filters) {
+    setFilters((prev) => ({ ...prev, [key]: !prev[key] }));
+  }
+
+  function selectCuisine(option: string) {
+    setFilters((prev) => ({ ...prev, cuisine: option === "전체" ? undefined : option }));
   }
 
   return (
@@ -62,22 +89,48 @@ export default function RecipesPage() {
       <h1 className="text-xl font-bold text-gray-900">오늘의 추천</h1>
 
       <div className="mt-4 flex gap-2 flex-wrap">
-        {FILTER_CHIPS.map((chip) => {
-          const active = filters[chip.key] === chip.value;
+        {CUISINE_OPTIONS.map((option) => {
+          const active = (filters.cuisine ?? "전체") === option;
           return (
             <button
-              key={chip.key}
-              onClick={() => toggleChip(chip.key, chip.value)}
+              key={option}
+              onClick={() => selectCuisine(option)}
               className={`px-3 py-1.5 rounded-full text-xs font-medium border ${
                 active
-                  ? "bg-fresh-600 text-white border-fresh-600"
+                  ? "bg-gray-900 text-white border-gray-900"
                   : "bg-white text-gray-600 border-gray-200"
               }`}
             >
-              {chip.label}
+              {option}
             </button>
           );
         })}
+      </div>
+
+      <div className="mt-2 flex gap-2 flex-wrap">
+        <button
+          onClick={() => setFilters((prev) => ({ ...prev, maxTime: prev.maxTime === 20 ? undefined : 20 }))}
+          className={`px-3 py-1.5 rounded-full text-xs font-medium border ${
+            filters.maxTime === 20
+              ? "bg-fresh-600 text-white border-fresh-600"
+              : "bg-white text-gray-600 border-gray-200"
+          }`}
+        >
+          20분 이내
+        </button>
+        {BOOLEAN_CHIPS.map((chip) => (
+          <button
+            key={chip.key}
+            onClick={() => toggleBoolean(chip.key)}
+            className={`px-3 py-1.5 rounded-full text-xs font-medium border ${
+              filters[chip.key]
+                ? "bg-fresh-600 text-white border-fresh-600"
+                : "bg-white text-gray-600 border-gray-200"
+            }`}
+          >
+            {chip.label}
+          </button>
+        ))}
       </div>
 
       {loading ? (
@@ -101,6 +154,29 @@ export default function RecipesPage() {
                     <div className="text-xs text-gray-500 mt-0.5">
                       재료 보유율 {r.matchRate}% · ⏱ {r.cookTimeMinutes}분 · {r.servings}인분
                       {r.kidFriendly ? " · 👨‍👩‍👧 가족메뉴" : ""}
+                    </div>
+                    <div className="mt-1 flex flex-wrap gap-1">
+                      <span className="text-[11px] px-2 py-0.5 rounded-full bg-gray-100 text-gray-600">
+                        {r.cuisineType}
+                      </span>
+                      <span className="text-[11px] px-2 py-0.5 rounded-full bg-gray-100 text-gray-600">
+                        {r.cookingMethod}
+                      </span>
+                      {r.spicyLevel > 0 && (
+                        <span className="text-[11px] px-2 py-0.5 rounded-full bg-red-50 text-red-600">
+                          매운맛 {"🌶".repeat(r.spicyLevel)}
+                        </span>
+                      )}
+                      {r.isDiet && (
+                        <span className="text-[11px] px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700">
+                          다이어트식
+                        </span>
+                      )}
+                      {r.isBabyFood && (
+                        <span className="text-[11px] px-2 py-0.5 rounded-full bg-blue-50 text-blue-700">
+                          유아식
+                        </span>
+                      )}
                     </div>
                   </div>
                   <div className="text-lg font-bold text-fresh-600">{r.score}</div>

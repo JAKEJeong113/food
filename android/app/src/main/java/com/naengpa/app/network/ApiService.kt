@@ -26,6 +26,11 @@ interface ApiService {
     suspend fun recommend(
         @Query("maxTime") maxTime: Int? = null,
         @Query("kidFriendly") kidFriendly: Int? = null,
-        @Query("noShopping") noShopping: Int? = null
+        @Query("noShopping") noShopping: Int? = null,
+        @Query("cuisine") cuisine: String? = null,
+        @Query("cookingMethod") cookingMethod: String? = null,
+        @Query("spicy") spicy: Int? = null,
+        @Query("diet") diet: Int? = null,
+        @Query("babyFood") babyFood: Int? = null
     ): RecommendResponse
 }

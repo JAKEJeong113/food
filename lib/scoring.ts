@@ -8,6 +8,10 @@ export interface RecipeRecommendation {
   cookTimeMinutes: number;
   kidFriendly: boolean;
   spicyLevel: number;
+  cuisineType: string;
+  cookingMethod: string;
+  isDiet: boolean;
+  isBabyFood: boolean;
   score: number;
   matchRate: number; // 0~100
   missing: string[];
@@ -18,6 +22,11 @@ export interface RecommendFilters {
   maxTime?: number;
   kidFriendlyOnly?: boolean;
   noShopping?: boolean;
+  cuisineType?: string; // 한식 | 중식 | 양식 | 일식
+  cookingMethod?: string; // 볶음 | 찜 | 구이 | 튀김 | 조림 | 국물 | 부침 | 무침
+  spicyOnly?: boolean; // spicy_level >= 1
+  dietOnly?: boolean;
+  babyFoodOnly?: boolean;
 }
 
 interface InventoryRow {
@@ -34,6 +43,10 @@ interface RecipeRow {
   cook_time_minutes: number;
   kid_friendly: number;
   spicy_level: number;
+  cuisine_type: string;
+  cooking_method: string;
+  is_diet: number;
+  is_baby_food: number;
 }
 
 interface RecipeIngredientRow {
@@ -135,6 +148,10 @@ export function recommendRecipes(filters: RecommendFilters = {}): RecipeRecommen
       cookTimeMinutes: recipe.cook_time_minutes,
       kidFriendly: recipe.kid_friendly === 1,
       spicyLevel: recipe.spicy_level,
+      cuisineType: recipe.cuisine_type,
+      cookingMethod: recipe.cooking_method,
+      isDiet: recipe.is_diet === 1,
+      isBabyFood: recipe.is_baby_food === 1,
       score: total,
       matchRate,
       missing,
@@ -146,6 +163,11 @@ export function recommendRecipes(filters: RecommendFilters = {}): RecipeRecommen
     if (filters.maxTime && r.cookTimeMinutes > filters.maxTime) return false;
     if (filters.kidFriendlyOnly && !r.kidFriendly) return false;
     if (filters.noShopping && r.missing.length > 0) return false;
+    if (filters.cuisineType && r.cuisineType !== filters.cuisineType) return false;
+    if (filters.cookingMethod && r.cookingMethod !== filters.cookingMethod) return false;
+    if (filters.spicyOnly && r.spicyLevel < 1) return false;
+    if (filters.dietOnly && !r.isDiet) return false;
+    if (filters.babyFoodOnly && !r.isBabyFood) return false;
     return true;
   });
 

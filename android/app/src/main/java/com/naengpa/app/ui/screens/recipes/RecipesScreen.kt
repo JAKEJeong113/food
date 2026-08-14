@@ -45,6 +45,19 @@ fun RecipesScreen(viewModel: RecipesViewModel = viewModel()) {
         Spacer(Modifier.height(12.dp))
 
         LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            items(CUISINE_OPTIONS) { option ->
+                val selected = (state.filters.cuisine ?: "전체") == option
+                FilterChip(
+                    selected = selected,
+                    onClick = { viewModel.selectCuisine(option) },
+                    label = { Text(option) }
+                )
+            }
+        }
+
+        Spacer(Modifier.height(8.dp))
+
+        LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             item {
                 FilterChip(
                     selected = state.filters.maxTime == 20,
@@ -64,6 +77,34 @@ fun RecipesScreen(viewModel: RecipesViewModel = viewModel()) {
                     selected = state.filters.noShopping,
                     onClick = { viewModel.toggleNoShopping() },
                     label = { Text("추가 장보기 없음") }
+                )
+            }
+            item {
+                FilterChip(
+                    selected = state.filters.spicy,
+                    onClick = { viewModel.toggleSpicy() },
+                    label = { Text("매운맛") }
+                )
+            }
+            item {
+                FilterChip(
+                    selected = state.filters.diet,
+                    onClick = { viewModel.toggleDiet() },
+                    label = { Text("다이어트식") }
+                )
+            }
+            item {
+                FilterChip(
+                    selected = state.filters.babyFood,
+                    onClick = { viewModel.toggleBabyFood() },
+                    label = { Text("유아식") }
+                )
+            }
+            item {
+                FilterChip(
+                    selected = state.filters.fried,
+                    onClick = { viewModel.toggleFried() },
+                    label = { Text("튀김") }
                 )
             }
         }
@@ -132,6 +173,11 @@ private fun RecipeCard(
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
+                    Spacer(Modifier.height(4.dp))
+                    Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                        AssistChip(onClick = {}, label = { Text(recipe.cuisineType) })
+                        AssistChip(onClick = {}, label = { Text(recipe.cookingMethod) })
+                    }
                 }
                 Text(
                     "${recipe.score}",
@@ -139,6 +185,21 @@ private fun RecipeCard(
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.primary
                 )
+            }
+
+            if (recipe.spicyLevel > 0 || recipe.isDiet || recipe.isBabyFood) {
+                Spacer(Modifier.height(6.dp))
+                Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                    if (recipe.spicyLevel > 0) {
+                        AssistChip(onClick = {}, label = { Text("매운맛 " + "🌶".repeat(recipe.spicyLevel)) })
+                    }
+                    if (recipe.isDiet) {
+                        AssistChip(onClick = {}, label = { Text("다이어트식") })
+                    }
+                    if (recipe.isBabyFood) {
+                        AssistChip(onClick = {}, label = { Text("유아식") })
+                    }
+                }
             }
 
             Spacer(Modifier.height(6.dp))

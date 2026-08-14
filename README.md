@@ -11,7 +11,8 @@ MVP를 담고 있습니다.
 
 - `/` — 홈. 재료 등록 전에는 촬영 유도, 등록 후에는 오늘의 추천 Top 3.
 - `/camera` — 냉장고 사진 업로드 → AI 인식 결과 확인/수정 → 냉장고에 반영.
-- `/recipes` — 필터(20분 이내 / 아이와 함께 / 추가 장보기 없음) + 전체 추천 목록.
+- `/recipes` — 요리종류(전체/한식/중식/양식) + 상세 필터(20분 이내 / 아이와 함께 /
+  추가 장보기 없음 / 매운맛 / 다이어트식 / 유아식 / 튀김) + 전체 추천 목록.
 
 ## 기술 스택
 
@@ -30,10 +31,15 @@ npm run dev
 ## 데이터 모델
 
 - `database/schema.sql` — 테이블 정의 (`ingredient_master`, `inventory`, `recipe`, `recipe_ingredient`)
-- `database/ingredients.sql` — 재료 마스터 + 기본양념 + 레시피 시드 데이터
+- `database/ingredients.sql` — 재료 마스터 + 기본양념 + 레시피 시드 데이터 (13종)
 
 기본양념(간장, 고추장, 소금 등)은 `is_basic_seasoning = 1`로 표시되며,
 재고 수량을 추적하지 않고 항상 보유한 것으로 간주해 추천 점수 계산에서 제외합니다.
+
+각 레시피는 `cuisine_type`(한식/중식/양식), `cooking_method`(볶음/찜/구이/튀김/조림/
+국물/부침/무침), `spicy_level`(0~3, 매운맛), `is_diet`(다이어트식), `is_baby_food`
+(유아식) 태그를 갖고 있어 `/recipes` 화면과 API(`/api/recipes/recommend`)에서
+필터로 사용합니다.
 
 ## 추천 알고리즘
 
