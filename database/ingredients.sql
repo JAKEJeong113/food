@@ -35,7 +35,11 @@ INSERT OR IGNORE INTO ingredient_master (name_ko, name_en, category, default_uni
 ('식초', 'vinegar', '기본양념', '-', '실온', NULL, 1, '["vinegar"]');
 
 -- 3) 레시피
-INSERT OR IGNORE INTO recipe
+-- ON CONFLICT(title) DO UPDATE: 이미 존재하는 DB(data/naengpa.db)에 이 파일이
+-- 다시 실행돼도(서버 재시작 시 항상 실행됨) 예전에 ALTER TABLE 기본값으로 채워진
+-- 태그가 여기 적힌 실제 값으로 갱신된다. INSERT OR IGNORE만 쓰면 title이 이미
+-- 있는 기존 레시피의 새 컬럼(cuisine_type 등)이 계속 기본값에 머무르게 된다.
+INSERT INTO recipe
   (title, description, servings, cook_time_minutes, difficulty, kid_friendly, spicy_level, cuisine_type, cooking_method, is_diet, is_baby_food)
 VALUES
 ('삼겹살 간장덮밥', '삼겹살을 간장 양념에 볶아 밥 위에 올리는 덮밥', 4, 18, '쉬움', 1, 0, '한식', '볶음', 0, 0),
@@ -50,10 +54,21 @@ VALUES
 ('토마토 계란볶음', '토마토와 계란만으로 만드는 중국 가정식 볶음', 2, 12, '쉬움', 1, 0, '중식', '볶음', 1, 1),
 ('감자튀김', '겉바속촉 수제 감자튀김', 2, 20, '보통', 1, 0, '양식', '튀김', 0, 0),
 ('토마토 파스타', '토마토와 양파로 만드는 담백한 파스타', 2, 20, '쉬움', 1, 0, '양식', '볶음', 0, 0),
-('제육볶음', '고추장 양념에 매콤하게 볶는 돼지고기 요리', 3, 20, '보통', 0, 2, '한식', '볶음', 0, 0);
+('제육볶음', '고추장 양념에 매콤하게 볶는 돼지고기 요리', 3, 20, '보통', 0, 2, '한식', '볶음', 0, 0)
+ON CONFLICT(title) DO UPDATE SET
+  description = excluded.description,
+  servings = excluded.servings,
+  cook_time_minutes = excluded.cook_time_minutes,
+  difficulty = excluded.difficulty,
+  kid_friendly = excluded.kid_friendly,
+  spicy_level = excluded.spicy_level,
+  cuisine_type = excluded.cuisine_type,
+  cooking_method = excluded.cooking_method,
+  is_diet = excluded.is_diet,
+  is_baby_food = excluded.is_baby_food;
 
 -- 4) 레시피 재료 (필수 재료 + 선택 재료 + 기본양념)
-INSERT INTO recipe_ingredient (recipe_id, ingredient_id, quantity_text, required)
+INSERT OR IGNORE INTO recipe_ingredient (recipe_id, ingredient_id, quantity_text, required)
 SELECT r.id, i.id, x.quantity_text, x.required
 FROM (
   SELECT '삼겹살 간장덮밥' AS recipe_title, '삼겹살' AS ingredient_name, '300g' AS quantity_text, 1 AS required

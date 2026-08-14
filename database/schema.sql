@@ -27,7 +27,7 @@ CREATE TABLE IF NOT EXISTS inventory (
 
 CREATE TABLE IF NOT EXISTS recipe (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
-  title TEXT NOT NULL UNIQUE,
+  title TEXT NOT NULL,
   description TEXT,
   servings INTEGER NOT NULL DEFAULT 2,
   cook_time_minutes INTEGER NOT NULL,
@@ -51,3 +51,8 @@ CREATE TABLE IF NOT EXISTS recipe_ingredient (
 CREATE INDEX IF NOT EXISTS idx_inventory_ingredient ON inventory(ingredient_id);
 CREATE INDEX IF NOT EXISTS idx_recipe_ingredient_recipe ON recipe_ingredient(recipe_id);
 CREATE INDEX IF NOT EXISTS idx_recipe_ingredient_ingredient ON recipe_ingredient(ingredient_id);
+
+-- UNIQUE 인덱스로 별도 생성 (컬럼 인라인 UNIQUE와 달리 기존 테이블에도 나중에
+-- 추가로 걸 수 있어, 이미 만들어진 data/naengpa.db에도 재적용 가능하다).
+CREATE UNIQUE INDEX IF NOT EXISTS idx_recipe_title ON recipe(title);
+CREATE UNIQUE INDEX IF NOT EXISTS idx_recipe_ingredient_unique ON recipe_ingredient(recipe_id, ingredient_id);
